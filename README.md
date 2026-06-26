@@ -1,34 +1,34 @@
 # A/B Testing Dashboard
 
-A statistical A/B testing dashboard built with **TypeScript + Vite**. No UI libraries, no chart libraries — every chart is hand-drawn SVG, every stat computed from scratch.
+A statistical A/B testing dashboard built with **TypeScript + Vite**. No UI libraries, no chart libraries every chart is hand-drawn SVG, every stat computed from scratch.
 
 ![A/B Test Dashboard](./preview.png)
 
 ## What it does
 
 - **Live simulation** of a two-proportion z-test, animated day by day
-- **Conversion rate chart** — dual line chart showing both variants over time
-- **p-value trajectory** — watch significance emerge (or not) as data accumulates
-- **95% Confidence intervals** — visual CI comparison with exact bounds
-- **Sample size calculator** — given a baseline rate and MDE, returns required n per variant
-- **Verdict card** — plain-English result with significance status
+- **Conversion rate chart** : dual line chart showing both variants over time
+- **p-value trajectory** : watch significance emerge (or not) as data accumulates
+- **95% Confidence intervals** : visual CI comparison with exact bounds
+- **Sample size calculator** : given a baseline rate and MDE, returns required n per variant
+- **Verdict card** : plain-English result with significance status
 
 ## Stats implemented (zero dependencies)
 
-| Method | Description |
-|---|---|
-| Two-proportion z-test | Compares conversion rates between A and B |
-| Normal CDF (Hart approximation) | p-value computation |
-| Wilson CI | 95% confidence interval for proportions |
-| Beasley-Springer-Moro | Inverse normal CDF for sample size calc |
-| Relative uplift | `(pB - pA) / pA * 100` |
-| Sample size formula | `n = 2 * pAvg * (1 - pAvg) * (zα + zβ)² / (pB - pA)²` |
+| Method                          | Description                                           |
+| ------------------------------- | ----------------------------------------------------- |
+| Two-proportion z-test           | Compares conversion rates between A and B             |
+| Normal CDF (Hart approximation) | p-value computation                                   |
+| Wilson CI                       | 95% confidence interval for proportions               |
+| Beasley-Springer-Moro           | Inverse normal CDF for sample size calc               |
+| Relative uplift                 | `(pB - pA) / pA * 100`                                |
+| Sample size formula             | `n = 2 * pAvg * (1 - pAvg) * (zα + zβ)² / (pB - pA)²` |
 
 ## Stack
 
-- **TypeScript** — strict mode, zero `any`
-- **Vite** — dev server + build
-- **pnpm** — package manager
+- **TypeScript** : strict mode, zero `any`
+- **Vite** : dev server + build
+- **pnpm** : package manager
 - No React, no chart libraries, no CSS frameworks
 
 ## Run locally
