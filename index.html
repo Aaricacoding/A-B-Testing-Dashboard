@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A/B Test Dashboard</title>
+  <style>
+    /* ── Tokens ── */
+    :root {
+      --bg:       #0d0f14;
+      --surface:  #151820;
+      --border:   #232733;
+      --fg:       #e8eaf0;
+      --muted:    #6b7080;
+      --a:        #4f8ef7;
+      --a-fill:   rgba(79,142,247,0.08);
+      --b:        #3ecf8e;
+      --sig:      #f56565;
+      --sig-fill: rgba(245,101,101,0.07);
+      --p-line:   #a78bfa;
+      --grid:     rgba(255,255,255,0.05);
+      --radius:   10px;
+      --mono:     'JetBrains Mono', 'Fira Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ── */
+    .shell {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+
+    /* ── Header ── */
+    header {
+      margin-bottom: 32px;
+    }
+    .eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--a);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      color: var(--fg);
+    }
+    header p {
+      color: var(--muted);
+      margin-top: 4px;
+      font-size: 13px;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    /* ── Config grid ── */
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .field label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    .field input[type="number"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--fg);
+      font-size: 14px;
+      font-family: var(--mono);
+      padding: 7px 10px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input[type="number"]:focus { border-color: var(--a); }
+
+    /* ── Button ── */
+    #btn-run {
+      background: var(--a);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 9px 22px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    #btn-run:hover { opacity: 0.88; }
+    #btn-run:active { transform: scale(0.97); }
+
+    /* ── Stat cards row ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 700px) { .stats-row { grid-template-columns: repeat(3, 1fr); } }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .stat-label {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .stat-value {
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--fg);
+      line-height: 1;
+    }
+    .stat-card:nth-child(1) .stat-value { color: var(--a); }
+    .stat-card:nth-child(2) .stat-value { color: var(--b); }
+
+    /* ── Verdict ── */
+    .verdict {
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+    .verdict.significant   { background: rgba(62,207,142,0.1); border: 1px solid rgba(62,207,142,0.25); color: var(--b); }
+    .verdict.inconclusive  { background: rgba(107,112,128,0.12); border: 1px solid var(--border); color: var(--muted); }
+
+    /* ── Charts ── */
+    .chart-wrap {
+      width: 100%;
+      overflow: hidden;
+    }
+    .chart-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .legend-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+
+    /* ── Progress scrubber ── */
+    .scrubber {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .scrubber input[type="range"] {
+      flex: 1;
+      accent-color: var(--a);
+      height: 3px;
+    }
+    #progress-label {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      min-width: 80px;
+    }
+
+    /* ── Sample size calculator ── */
+    .ss-calc {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: flex-end;
+    }
+    .ss-calc .field { min-width: 140px; }
+    #ss-calc-result {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--b);
+      padding: 8px 0;
+      flex: 1;
+      min-width: 200px;
+    }
+    #ss-value {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <div class="eyebrow">Statistical Analysis Tool</div>
+    <h1>A/B Test Dashboard</h1>
+    <p>Two-proportion z-test · 95% confidence intervals · Live simulation · Zero dependencies</p>
+  </header>
+
+  <!-- Config -->
+  <div class="card">
+    <div class="card-title">Test Configuration</div>
+    <div class="config-grid">
+      <div class="field">
+        <label>Total Users</label>
+        <input type="number" id="input-n" value="10000" min="100" step="100" />
+      </div>
+      <div class="field">
+        <label>Test Duration (days)</label>
+        <input type="number" id="input-days" value="30" min="7" max="90" />
+      </div>
+      <div class="field">
+        <label>Variant A Rate (%)</label>
+        <input type="number" id="input-rate-a" value="5.0" min="0.1" max="99" step="0.1" />
+      </div>
+      <div class="field">
+        <label>Variant B Rate (%)</label>
+        <input type="number" id="input-rate-b" value="5.8" min="0.1" max="99" step="0.1" />
+      </div>
+    </div>
+    <button id="btn-run">▶  Run Simulation</button>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Rate A</div>
+      <div class="stat-value" id="stat-rate-a">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Rate B</div>
+      <div class="stat-value" id="stat-rate-b">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Uplift</div>
+      <div class="stat-value" id="stat-uplift">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">p-value</div>
+      <div class="stat-value" id="stat-pvalue">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Z-score</div>
+      <div class="stat-value" id="stat-z">—</div>
+    </div>
+  </div>
+
+  <!-- Verdict -->
+  <div class="verdict inconclusive" id="verdict">Run the simulation to see results.</div>
+
+  <!-- Conversion rate chart -->
+  <div class="card">
+    <div class="card-title">
+      Conversion Rate Over Time
+      <span style="float:right; font-size:11px; font-weight:400; text-transform:none; letter-spacing:0;">
+        <span class="legend-dot" style="background:var(--a)"></span>Variant A &nbsp;
+        <span class="legend-dot" style="background:var(--b)"></span>Variant B
+      </span>
+    </div>
+    <div class="chart-wrap"><div id="chart-conv"></div></div>
+    <div class="scrubber">
+      <input type="range" id="progress-bar" value="0" min="0" max="29" />
+      <span id="progress-label">Day 1</span>
+    </div>
+  </div>
+
+  <!-- p-value chart -->
+  <div class="card">
+    <div class="card-title">p-value Trajectory</div>
+    <div class="chart-wrap"><div id="chart-pvalue"></div></div>
+  </div>
+
+  <!-- CI chart -->
+  <div class="card">
+    <div class="card-title">95% Confidence Intervals</div>
+    <div class="chart-wrap"><div id="chart-ci"></div></div>
+  </div>
+
+  <!-- Sample size calculator -->
+  <div class="card">
+    <div class="card-title">Sample Size Calculator</div>
+    <div class="ss-calc">
+      <div class="field">
+        <label>Baseline Rate (%)</label>
+        <input type="number" id="ss-base" value="5" min="0.1" max="99" step="0.1" />
+      </div>
+      <div class="field">
+        <label>Min. Detectable Effect (%)</label>
+        <input type="number" id="ss-mde" value="10" min="1" max="100" step="1" />
+      </div>
+      <div id="ss-calc-result">—</div>
+    </div>
+    <div id="ss-value" style="margin-top:8px; font-size:11px; color:var(--muted);">
+      Assumes α = 0.05, power = 80%, two-sided test
+    </div>
+  </div>
+
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
